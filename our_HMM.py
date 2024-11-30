@@ -19,8 +19,10 @@ class our_HMM:
         self.emission = np.random.rand(len(self.tags), len(self.words))
         
         # transition probabilities 
-        self.transition = np.random.rand(len(self.tags)+1, len(self.tags)+1)
+        self.transition = np.random.rand(len(self.tags)+1, len(self.tags)+1) # +1 in both because start and stop states have to be taken into account
 
+        self.previos_max_prob = 0
+        self.previos_max_prob_index = 0
     def viterbi_algorithm(self):
 
         print(f'Vocabulary: {self.words}')
@@ -33,23 +35,29 @@ class our_HMM:
         # for i in tags 
         for i in range(len(self.tags)):
             # for j in words 
+            print(f'Tag: {self.tags[i]}')
             for j in range(len(self.words)):
+                print(f'Word: {self.words[j]}')
                 # probability of tag i and word j = 
                 #   best probability of the previous word for all tags
                 #   emission probability of i tag and j word
                 #   transition probability of best previos i tag and actual i tag
                 if j != 0:
-                    previos_max_prob = np.max(self.result[:, j-1])
-                    previos_max_prob_index = np.argmax(self.result[:, j-1])
-                    self.result[i,j] = previos_max_prob + self.emission[i,j] + self.transition[previos_max_prob_index+1,i]
+                    self.result[i,j] = self.previos_max_prob + self.emission[i,j] + self.transition[self.previos_max_prob_index+1,i]
 
                 else: 
                     self.result[i,j] = self.emission[i,j]*self.transition[0,i]
+            
+            self.previos_max_prob = np.max(self.result[:, j-1])
+            self.previos_max_prob_index = np.argmax(self.result[:, j-1])
+            print(f'Previous max prob: {self.previos_max_prob}')
+            print(f'Previous max prob tag: {self.tags[self.previos_max_prob_index]}')
+            final_result.append([i,self.previos_max_prob_index])
         
         # Add final probability 
-        previos_max_prob = np.max(self.result[:, len(self.words)-1])
-        previos_max_prob_index = np.argmax(self.result[:, len(self.words)-1])
-        stop_result = self.transition[previos_max_prob_index+1,len(self.tags)-1] + previos_max_prob
+        stop_result = self.transition[self.previos_max_prob_index+1,len(self.tags)-1] + self.previos_max_prob
+        print(f'Result: {self.result}')
+        print(f'Stop result: {stop_result}')
         for w in range(len(self.words)):
             max = np.argmax(self.result[:,i])
             final_result.append(self.tags[max])
