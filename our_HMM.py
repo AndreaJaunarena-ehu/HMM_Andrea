@@ -13,13 +13,13 @@ class our_HMM:
         self.words = V # words in the given sentence  
         
         # result probabilities
-        self.result = np.random.zeros((len(self.tags), len(self.words)))
+        self.result = np.zeros((len(self.tags), len(self.words)))
         
         # emission probabilities 
-        self.emission = np.random.rand((len(self.tags), len(self.words)))
+        self.emission = np.random.rand(len(self.tags), len(self.words))
         
         # transition probabilities 
-        self.transition = np.random.rand((len(self.tags)+1, len(self.tags)+1))
+        self.transition = np.random.rand(len(self.tags)+1, len(self.tags)+1)
 
     def viterbi_algorithm(self):
 
@@ -56,9 +56,9 @@ class our_HMM:
         
         return final_result
     
-def main(): 
+if __name__ == '__main__':
 
-    Q = ['N', 'V']
+    Q = ["N", "V"]
     V = ["they", "can", "fish"]
 
     hmm = our_HMM(Q, V)
