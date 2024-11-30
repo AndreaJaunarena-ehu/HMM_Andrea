@@ -13,15 +13,22 @@ class our_HMM:
         self.words = V # words in the given sentence  
         
         # result probabilities
-        self.result = np.random.rand((len(self.tags), len(self.words)))
+        self.result = np.random.zeros((len(self.tags), len(self.words)))
         
         # emission probabilities 
         self.emission = np.random.rand((len(self.tags), len(self.words)))
         
         # transition probabilities 
-        self.transition = np.random.rand((len(self.tags), len(self.tags)))
+        self.transition = np.random.rand((len(self.tags)+1, len(self.tags)+1))
 
     def viterbi_algorithm(self):
+
+        print(f'Vocabulary: {self.words}')
+        print(f'Tags: {self.tags}')
+        print(f'Emission features: {self.emission}')
+        print(f'Transition features: {self.transition}')
+        print(f'Result matrix: {self.result}')
+
         final_result = []
         # for i in tags 
         for i in range(len(self.tags)):
@@ -51,3 +58,10 @@ class our_HMM:
     
     def main(): 
         
+        Q = ['N', 'V']
+        V = ["they", "can", "fish"]
+
+        hmm = our_HMM(Q, V)
+        final_result = hmm.viterbi_algorithm()
+        print(f'Given the following vocabulary: {V}')
+        print(f'That is the result: {final_result}')
