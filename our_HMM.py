@@ -56,12 +56,12 @@ class our_HMM:
         
         return final_result
     
-    def main(): 
-        
-        Q = ['N', 'V']
-        V = ["they", "can", "fish"]
+def main(): 
 
-        hmm = our_HMM(Q, V)
-        final_result = hmm.viterbi_algorithm()
-        print(f'Given the following vocabulary: {V}')
-        print(f'That is the result: {final_result}')
+    Q = ['N', 'V']
+    V = ["they", "can", "fish"]
+
+    hmm = our_HMM(Q, V)
+    final_result = hmm.viterbi_algorithm()
+    print(f'Given the following vocabulary: {V}')
+    print(f'That is the result: {final_result}')
