@@ -25,19 +25,19 @@ class our_HMM:
         self.previos_max_prob_index = 0
     def viterbi_algorithm(self):
 
-        print(f'Vocabulary: {self.words}')
+        """print(f'Vocabulary: {self.words}')
         print(f'Tags: {self.tags}')
         print(f'Emission features: {self.emission}')
         print(f'Transition features: {self.transition}')
-        print(f'Result matrix: {self.result}')
+        print(f'Result matrix: {self.result}')"""
 
         final_result = []
         # for i in tags 
         for i in range(len(self.tags)):
             # for j in words 
-            print(f'Tag: {self.tags[i]}')
+            # print(f'Tag: {self.tags[i]}')
             for j in range(len(self.words)):
-                print(f'Word: {self.words[j]}')
+                # print(f'Word: {self.words[j]}')
                 # probability of tag i and word j = 
                 #   best probability of the previous word for all tags
                 #   emission probability of i tag and j word
@@ -50,17 +50,14 @@ class our_HMM:
             
             self.previos_max_prob = np.max(self.result[:, j-1])
             self.previos_max_prob_index = np.argmax(self.result[:, j-1])
-            print(f'Previous max prob: {self.previos_max_prob}')
-            print(f'Previous max prob tag: {self.tags[self.previos_max_prob_index]}')
+            # print(f'Previous max prob: {self.previos_max_prob}')
+            # print(f'Previous max prob tag: {self.tags[self.previos_max_prob_index]}')
             final_result.append([i,self.previos_max_prob_index])
         
         # Add final probability 
-        stop_result = self.transition[self.previos_max_prob_index+1,len(self.tags)-1] + self.previos_max_prob
-        print(f'Result: {self.result}')
-        print(f'Stop result: {stop_result}')
-        for w in range(len(self.words)):
-            max = np.argmax(self.result[:,i])
-            final_result.append(self.tags[max])
+        self.previos_max_prob = np.max(self.result[:, j])
+        self.previos_max_prob_index = np.argmax(self.result[:, j])
+        final_result.append([i,self.previos_max_prob_index])
         
         return final_result
     
@@ -71,5 +68,7 @@ if __name__ == '__main__':
 
     hmm = our_HMM(Q, V)
     final_result = hmm.viterbi_algorithm()
-    print(f'Given the following vocabulary: {V}')
-    print(f'That is the result: {final_result}')
+    for cords in final_result:
+        x = cords[0]
+        y = cords[1]
+        print(f'Word: {Q[y]}, tag: {V[x]}')
