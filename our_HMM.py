@@ -62,17 +62,30 @@ class our_HMM:
             # print(f'Previous max prob tag: {self.tags[self.previos_max_prob_index]}')
             final_result.append([i,self.previos_max_prob_index])
         
-        print(self.result)
+        # print(self.result)
         return final_result
     
 if __name__ == '__main__':
 
-    Q = ["N", "V"]
-    V = ["they", "can", "fish"]
+    # Class first example 
+    Q = ["N", "V"] # Tag set 
+    V = ["the", "can", "fish"] # Sentence
 
     hmm = our_HMM(Q, V)
     final_result = hmm.viterbi_algorithm()
-    print(final_result)
+    print("Class first example")
+    for cords in final_result:
+        x = cords[0] # word
+        y = cords[1] # max prob tag
+        print(f'Word: {V[x]}, tag: {Q[y]}')
+
+    # Class second example 
+    Q = ["ADJ", "ADV", "DET", "NOUN", "VERB"] # Tag set 
+    V = ["the", "aged", "bottle", "flies", "fast"] # Sentence
+
+    hmm = our_HMM(Q, V)
+    final_result = hmm.viterbi_algorithm()
+    print("Class second example")
     for cords in final_result:
         x = cords[0] # word
         y = cords[1] # max prob tag
