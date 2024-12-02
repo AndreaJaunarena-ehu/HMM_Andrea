@@ -1,28 +1,31 @@
 import numpy as np 
 class our_HMM:
+    
     # Vocabulary V (it is formed by the given words)
-    # A set of N states Q = q1, q2, ..., qN
-    # A sequence of T observations O = o1, o2, ..., oN 
-    # A transition probability matrix A = a11, ..., aij, aNN
-    # A sequence of observation likelihoods B = bi(ot)
-    # A initial probability distribution over states π = π1, π2, ..., πN
+    # Set of tags Q (it is formed by given PoS tags)
+    # Result matrix = matrix with probabilities with len(Q) x len(V) size (tags in rows and words in columns)
+    # Emission matrix = matrix with emission probabilities with len(Q) x len(V) size (tags in rows and words in columns)
+    # Transition matrix = matrix with transition probabilities with len(Q)+1 x len(Q)+1 size (tags in rows and columns) (+1 in both because start and stop states have to be taken into account)
 
     def __init__(self, Q, V):
         
-        self.tags = Q # tags
+        self.tags = Q # tags in the given tag set
         self.words = V # words in the given sentence  
         
-        # result probabilities
+        # Result probabilities
         self.result = np.zeros((len(self.tags), len(self.words)))
         
-        # emission probabilities 
+        # Emission probabilities 
         self.emission = np.random.rand(len(self.tags), len(self.words))
         
-        # transition probabilities 
-        self.transition = np.random.rand(len(self.tags)+1, len(self.tags)+1) # +1 in both because start and stop states have to be taken into account
+        # Transition probabilities 
+        self.transition = np.random.rand(len(self.tags)+1, len(self.tags)+1) # 
 
+        # Previos word maximum probability for all tags 
         self.previos_max_prob = 0
+        # Previos word maximum probability's index for all tags
         self.previos_max_prob_index = 0
+
     def viterbi_algorithm(self):
 
         """print(f'Vocabulary: {self.words}')
@@ -31,34 +34,35 @@ class our_HMM:
         print(f'Transition features: {self.transition}')
         print(f'Result matrix: {self.result}')"""
 
+        # For each word the tag with the highest probability will be stored
         final_result = []
-        # for i in tags 
-        for i in range(len(self.tags)):
-            # for j in words 
-            # print(f'Tag: {self.tags[i]}')
-            for j in range(len(self.words)):
-                # print(f'Word: {self.words[j]}')
-                # probability of tag i and word j = 
-                #   best probability of the previous word for all tags
-                #   emission probability of i tag and j word
-                #   transition probability of best previos i tag and actual i tag
-                if j != 0:
-                    self.result[i,j] = self.previos_max_prob + self.emission[i,j] + self.transition[self.previos_max_prob_index+1,i]
+        
+        # for i in words 
+        for i in range(len(self.words)):
+            # print(f'Word: {self.words[i]}')
+
+            # for j in tags 
+            for j in range(len(self.tags)):
+                # print(f'Tag: {self.tags[j]}')
+
+                # probability of tag j and word i = 
+                #   best probability of the previous word for all tags + 
+                #   emission probability of j tag and i word +
+                #   transition probability of best previous j tag and actual j tag
+                if i != 0:
+                    self.result[j,i] = self.previos_max_prob + self.emission[j,i] + self.transition[self.previos_max_prob_index+1,j]
 
                 else: 
-                    self.result[i,j] = self.emission[i,j]*self.transition[0,i]
+                    self.result[j,i] = self.emission[j,i]*self.transition[0,j]
             
-            self.previos_max_prob = np.max(self.result[:, j-1])
-            self.previos_max_prob_index = np.argmax(self.result[:, j-1])
+            # Calculate the higher probability tag for the previous word 
+            self.previos_max_prob = np.max(self.result[:, i-1])
+            self.previos_max_prob_index = np.argmax(self.result[:, i-1])
             # print(f'Previous max prob: {self.previos_max_prob}')
             # print(f'Previous max prob tag: {self.tags[self.previos_max_prob_index]}')
             final_result.append([i,self.previos_max_prob_index])
         
-        # Add final probability 
-        self.previos_max_prob = np.max(self.result[:, j])
-        self.previos_max_prob_index = np.argmax(self.result[:, j])
-        final_result.append([i,self.previos_max_prob_index])
-        
+        print(self.result)
         return final_result
     
 if __name__ == '__main__':
@@ -68,7 +72,8 @@ if __name__ == '__main__':
 
     hmm = our_HMM(Q, V)
     final_result = hmm.viterbi_algorithm()
+    print(final_result)
     for cords in final_result:
-        x = cords[0]
-        y = cords[1]
-        print(f'Word: {Q[y]}, tag: {V[x]}')
+        x = cords[0] # word
+        y = cords[1] # max prob tag
+        print(f'Word: {V[x]}, tag: {Q[y]}')
