@@ -14,7 +14,7 @@ def parse_conllu(file_path: PathLike) -> list[list[tuple[Lemma, Upos]]]:
             current_list.append((token["lemma"], token["upos"]))
         final_list.append(current_list)
     
-    print(final_list)
+    return final_list
 
 
 if __name__ == "__main__":

@@ -1,5 +1,10 @@
+from collections import Counter
+from os import PathLike
 import numpy as np 
 from get_list_upos import parse_conllu, Lemma, Upos
+
+UNKNOWN_KEYWORD = "UNK"
+
 
 class our_HMM:
     
@@ -66,6 +71,20 @@ class our_HMM:
         
         # print(self.result)
         return final_result
+    
+    def train(self, file_path: PathLike, unk_threshold: int = 0):
+        parsed_file = parse_conllu(file_path)
+
+        self.tags = list(set([value[1] for sentence in parsed_file for value in sentence]))
+        
+        c = Counter([value[0] for sentence in parsed_file for value in sentence])
+        if unk_threshold > 0:
+            c -= Counter({k: v for k, v in c.items() if v <= unk_threshold})
+            # Add UNK to the vocabulary
+            c.update([UNKNOWN_KEYWORD])
+        self.words = list(c.keys())
+
+
     
 if __name__ == '__main__':
 
