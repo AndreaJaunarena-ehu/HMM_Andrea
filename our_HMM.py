@@ -1,4 +1,6 @@
 import numpy as np 
+from get_list_upos import parse_conllu, Lemma, Upos
+
 class our_HMM:
     
     # Vocabulary V (it is formed by the given words)
