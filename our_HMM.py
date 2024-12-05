@@ -3,6 +3,7 @@ from os import PathLike
 import numpy as np 
 from get_list_upos import parse_conllu, Lemma, Upos
 import pandas as pd
+import argparse
 
 UNKNOWN_KEYWORD: Lemma = "UNK"
 START_TAG: Upos = "START"
@@ -17,14 +18,17 @@ class our_HMM:
     # Emission matrix = matrix with emission probabilities with len(Q) x len(V) size (tags in rows and words in columns)
     # Transition matrix = matrix with transition probabilities with len(Q)+1 x len(Q)+1 size (tags in rows and columns) (+1 in both because start and stop states have to be taken into account)
 
-    def __init__(self, file_path: PathLike, unk_threshold: int = 0):
+    def __init__(self, file_path: PathLike = None, unk_threshold: int = 0):
         
         self.words: list[Lemma]
         self.tags: list[Upos]
+
+        # See the 41th slide for the format of the Dataframes
         self.emission: pd.DataFrame
         self.transition: pd.DataFrame
 
-        self.fit(file_path, unk_threshold)
+        if file_path is not None:
+            self.fit(file_path, unk_threshold)
 
         """
         self.tags = Q # tags in the given tag set
@@ -122,7 +126,13 @@ class our_HMM:
 
     
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="HMM")
+    parser.add_argument("train_file_path", default="example_sentence.conllu", type=str, help="Path to the file for fitting the HMM")
+    parser.add_argument("--unk_threshold", default=0, type=int, help="Threshold for unknown words")
+    args = parser.parse_args()
 
+    hmm = our_HMM(args.train_file_path, unk_threshold=args.unk_threshold)
+    """
     # Class first example 
     Q = ["N", "V"] # Tag set 
     V = ["the", "can", "fish"] # Sentence
@@ -146,3 +156,4 @@ if __name__ == '__main__':
         x = cords[0] # word
         y = cords[1] # max prob tag
         print(f'Word: {V[x]}, tag: {Q[y]}')
+    """
