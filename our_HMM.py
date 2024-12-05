@@ -4,6 +4,7 @@ import numpy as np
 from get_list_upos import parse_conllu, Lemma, Upos
 import pandas as pd
 import argparse
+import evaluate
 
 UNKNOWN_KEYWORD: Lemma = "UNK"
 START_TAG: Upos = "START"
@@ -49,7 +50,7 @@ class our_HMM:
         self.previos_max_prob_index = 0
         """
 
-    def viterbi_algorithm(self, sentence: list[Lemma]) -> list[tuple[Lemma, Upos]]:
+    def viterbi_algorithm(self, sentence: list[Lemma]) -> tuple[list[tuple[Lemma, Upos]], pd.DataFrame]:
 
         """print(f'Vocabulary: {self.words}')
         print(f'Tags: {self.tags}')
@@ -96,7 +97,7 @@ class our_HMM:
             # print(f'Previous max prob tag: {self.tags[self.previos_max_prob_index]}')
             final_result.append((i_word, previous_max_prob_upos))
 
-        return final_result
+        return (final_result, result)
 
     def fit(self, file_path: PathLike, unk_threshold: int = 0):
         parsed_file = parse_conllu(file_path)
@@ -108,7 +109,7 @@ class our_HMM:
         if unk_threshold > 0:
             c -= Counter({k: v for k, v in c.items() if v <= unk_threshold})
             # Add UNK to the vocabulary
-            c.update([UNKNOWN_KEYWORD])
+            c.update([UNKNOWN_KEYWORD]) # TODO: If the train is done with no UNK and the test has unknowns it will raise an error
         self.words = list(c.keys())
 
         # Emission probabilities
@@ -132,10 +133,36 @@ class our_HMM:
 
         # TODO: Apply log transformation to columns (and then use the minimum in virbeti)
 
+    def test(self, file_path: PathLike) -> dict:
+        parsed_file = parse_conllu(file_path)
+        
+        gold: list[Upos] = []
+        pred: list[Upos] = []
+
+        for sentence in parsed_file:
+            gold.extend([word_pair[1] for word_pair in sentence])
+
+            lemma_sentence = [word_pair[0] for word_pair in sentence]
+
+            predictions = self.viterbi_algorithm(lemma_sentence)[0]
+            predictions = [word_pair[1] for word_pair in predictions]
+            pred.extend(predictions)
+        
+        # Change the gold and pred values for the index values in self.tags
+        gold = [self.tags.index(x) for x in gold]
+        pred = [self.tags.index(x) for x in pred]
+
+        clf_metrics = evaluate.combine(["accuracy"])
+        results = clf_metrics.compute(predictions=pred, references=gold)
+
+        print(results)
+        return results
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="HMM")
     parser.add_argument("train_file_path", type=str, help="Path to the file for fitting the HMM")
-    parser.add_argument("--unk_threshold", default=0, type=int, help="Threshold for unknown words")
+    parser.add_argument("--unk_threshold", "-u", default=0, type=int, help="Threshold for unknown words")
+    parser.add_argument("--test_file_path", "-t", type=str, help="Path to the file for testing on the fitted model.")
     args = parser.parse_args()
 
     hmm = our_HMM(args.train_file_path, unk_threshold=args.unk_threshold)
@@ -144,8 +171,12 @@ if __name__ == '__main__':
         "the current Windows NT user must be an administrator for the computer .",
         "the can fish",
         "the aged bottle fly fast",
+        "the quick brown fox jump over the lazy dog ."
     ]
 
     for i in example_sentences:
         print(i)
-        print(hmm.viterbi_algorithm(i.split(" ")))
+        print(hmm.viterbi_algorithm(i.split(" "))[0])
+
+    if args.test_file_path is not None:
+        hmm.test(args.test_file_path)
