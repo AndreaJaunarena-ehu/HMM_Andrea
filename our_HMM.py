@@ -1,5 +1,6 @@
 from collections import Counter
 from os import PathLike
+from typing import Literal
 import numpy as np
 from get_list_upos import parse_conllu, Lemma, Upos
 import pandas as pd
@@ -19,11 +20,13 @@ class our_HMM:
     # Emission matrix = matrix with emission probabilities with len(Q) x len(V) size (tags in rows and words in columns)
     # Transition matrix = matrix with transition probabilities with len(Q)+1 x len(Q)+1 size (tags in rows and columns) (+1 in both because start and stop states have to be taken into account)
 
-    def __init__(self, file_path: PathLike = None, unk_threshold: int = 0):
+    def __init__(self, file_path: PathLike = None, unk_threshold: int = 0, word_model: Literal["form", "lemma"] = "form"):
+        
+        self.word_model: Literal["form", "lemma"] = word_model
 
         self.words: list[Lemma]
         self.tags: list[Upos]
-
+        
         # See the 41th slide for the format of the Dataframes
         self.emission: pd.DataFrame
         self.transition: pd.DataFrame # Index: to, Columns: from
@@ -100,7 +103,7 @@ class our_HMM:
         return (final_result, result)
 
     def fit(self, file_path: PathLike, unk_threshold: int = 0):
-        parsed_file = parse_conllu(file_path)
+        parsed_file = parse_conllu(file_path, mode=self.word_model)
 
         # Get the lists of words and tags
         self.tags = list(set([value[1] for sentence in parsed_file for value in sentence]))
@@ -134,7 +137,7 @@ class our_HMM:
         # TODO: Apply log transformation to columns (and then use the minimum in virbeti)
 
     def test(self, file_path: PathLike) -> dict:
-        parsed_file = parse_conllu(file_path)
+        parsed_file = parse_conllu(file_path, mode=self.word_model)
         
         gold: list[Upos] = []
         pred: list[Upos] = []
@@ -163,20 +166,24 @@ if __name__ == '__main__':
     parser.add_argument("train_file_path", type=str, help="Path to the file for fitting the HMM")
     parser.add_argument("--unk_threshold", "-u", default=0, type=int, help="Threshold for unknown words")
     parser.add_argument("--test_file_path", "-t", type=str, help="Path to the file for testing on the fitted model.")
+    parser.add_argument("--word_model", "-w", type=str, default="form", help="Which format to use when parsing words. 'form' and 'lemma' are possible.")
     args = parser.parse_args()
 
-    hmm = our_HMM(args.train_file_path, unk_threshold=args.unk_threshold)
+    hmm = our_HMM(args.train_file_path, unk_threshold=args.unk_threshold, word_model=args.word_model)
 
-    example_sentences = [
-        "the current Windows NT user must be an administrator for the computer .",
-        "the can fish",
-        "the aged bottle fly fast",
-        "the quick brown fox jump over the lazy dog ."
-    ]
+    if args.test_file_path is not None:
+        hmm.test(args.test_file_path)
+    else:
+        example_sentences = [
+            "the current Windows NT user must be an administrator for the computer .",
+            "the can fish",
+            "the aged bottle fly fast",
+            "the quick brown fox jump over the lazy dog ."
+        ]
 
-    for i in example_sentences:
-        print(i)
-        print(hmm.viterbi_algorithm(i.split(" "))[0])
+        for i in example_sentences:
+            print(i)
+            print(hmm.viterbi_algorithm(i.split(" "))[0])
 
     if args.test_file_path is not None:
         hmm.test(args.test_file_path)
