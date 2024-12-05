@@ -14,8 +14,8 @@ END_TAG: Upos = "END"
 
 class our_HMM:
 
-    # Vocabulary V (it is formed by the given words)
-    # Set of tags Q (it is formed by given PoS tags)
+    # Vocabulary: words (it is formed by the given words)
+    # Set of tags: tags (it is formed by given PoS tags)
     # Result matrix = matrix with probabilities with len(Q) x len(V) size (tags in rows and words in columns)
     # Emission matrix = matrix with emission probabilities with len(Q) x len(V) size (tags in rows and words in columns)
     # Transition matrix = matrix with transition probabilities with len(Q)+1 x len(Q)+1 size (tags in rows and columns) (+1 in both because start and stop states have to be taken into account)
@@ -33,25 +33,6 @@ class our_HMM:
 
         if file_path is not None:
             self.fit(file_path, unk_threshold)
-
-        """
-        self.tags = Q # tags in the given tag set
-        self.words = V # words in the given sentence
-
-        # Result probabilities
-        self.result = np.zeros((len(self.tags), len(self.words)))
-
-        # Emission probabilities
-        self.emission = np.random.rand(len(self.tags), len(self.words))
-
-        # Transition probabilities
-        self.transition = np.random.rand(len(self.tags)+1, len(self.tags)+1) #
-
-        # Previos word maximum probability for all tags
-        self.previos_max_prob = 0
-        # Previos word maximum probability's index for all tags
-        self.previos_max_prob_index = 0
-        """
 
     def viterbi_algorithm(self, sentence: list[Lemma]) -> tuple[list[tuple[Lemma, Upos]], pd.DataFrame]:
 
@@ -108,6 +89,7 @@ class our_HMM:
         # Get the lists of words and tags
         self.tags = list(set([value[1] for sentence in parsed_file for value in sentence]))
 
+        # Remove the words that are not very frequent
         c = Counter([value[0] for sentence in parsed_file for value in sentence])
         c -= Counter({k: v for k, v in c.items() if v < unk_threshold})
         # Add UNK to the vocabulary
@@ -115,10 +97,11 @@ class our_HMM:
         
         self.words = list(c.keys())
 
-        # Emission probabilities
+        # The probability matrices
         self.emission = pd.DataFrame(0, index=self.tags, columns=self.words, dtype=float)
         self.transition = pd.DataFrame(0, index=self.tags + [END_TAG], columns=self.tags + [START_TAG], dtype=float)
 
+        # Count the situations
         for sentence in parsed_file:
             previousUpos: Upos = START_TAG
             for word, upos in sentence:
@@ -147,8 +130,26 @@ class our_HMM:
         self.transition = self.transition.map(lambda x: np.log2(x) if x > 0 else -np.inf)
 
     def test(self, file_path: PathLike) -> dict:
+        
+        def compute_metrics(gold: list[Upos], pred: list[Upos]) -> dict:
+            metric1 = evaluate.load("precision")
+            metric2 = evaluate.load("recall")
+            metric3 = evaluate.load("f1")
+            metric4 = evaluate.load("accuracy")
+
+            precision_micro = metric1.compute(predictions=pred, references=gold, average="micro")["precision"]
+            precision_macro = metric1.compute(predictions=pred, references=gold, average="macro")["precision"]
+            recall_micro = metric2.compute(predictions=pred, references=gold, average="micro")["recall"]
+            recall_macro = metric2.compute(predictions=pred, references=gold, average="macro")["recall"]
+            f1_micro = metric3.compute(predictions=pred, references=gold, average="micro")["f1"]
+            f1_macro = metric3.compute(predictions=pred, references=gold, average="macro")["f1"]
+            accuracy = metric4.compute(predictions=pred, references=gold)["accuracy"]
+
+            return {"precision_micro": precision_micro, "precision_macro": precision_macro, "recall_micro": recall_micro, "recall_macro": recall_macro, "f1_micro": f1_micro, "f1_macro": f1_macro, "accuracy": accuracy}
+
         parsed_file = parse_conllu(file_path, mode=self.word_model)
         
+        # We just put all the tags in a continuos list, reducing in that way one dimension
         gold: list[Upos] = []
         pred: list[Upos] = []
 
@@ -165,8 +166,7 @@ class our_HMM:
         gold = [self.tags.index(x) for x in gold]
         pred = [self.tags.index(x) for x in pred]
 
-        clf_metrics = evaluate.combine(["accuracy"])
-        results = clf_metrics.compute(predictions=pred, references=gold)
+        results = compute_metrics(pred=pred, gold=gold)
 
         print(results)
         return results
@@ -174,11 +174,11 @@ class our_HMM:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="HMM")
     parser.add_argument("train_file_path", type=str, help="Path to the file for fitting the HMM")
-    parser.add_argument("--unk_threshold", "-u", default=1, type=int, help="Threshold for unknown words")
+    parser.add_argument("--unk_threshold", "-u", default=1, type=int, help="Threshold for unknown words, minimum times that must appear to register. Defaults to 1.")
     parser.add_argument("--test_file_path", "-t", type=str, help="Path to the file for testing on the fitted model.")
     parser.add_argument("--word_model", "-w", type=str, default="form", help="Which format to use when parsing words. 'form' and 'lemma' are possible.")
     parser.add_argument("--sentence", "-s", type=str, help="A single sentence to test the model (splitted by spaces)")
-    parser.add_argument("--export_model", "-e", help="Export the trasition and emission matrices to a file", action="store_true")
+    parser.add_argument("--export_model", "-e", help="Export the trasition and emission matrices to a file.", action="store_true")
     args = parser.parse_args()
 
     hmm = our_HMM(args.train_file_path, unk_threshold=args.unk_threshold, word_model=args.word_model)
