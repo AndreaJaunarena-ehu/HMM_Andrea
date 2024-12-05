@@ -20,7 +20,7 @@ class our_HMM:
     # Emission matrix = matrix with emission probabilities with len(Q) x len(V) size (tags in rows and words in columns)
     # Transition matrix = matrix with transition probabilities with len(Q)+1 x len(Q)+1 size (tags in rows and columns) (+1 in both because start and stop states have to be taken into account)
 
-    def __init__(self, file_path: PathLike = None, unk_threshold: int = 0, word_model: Literal["form", "lemma"] = "form"):
+    def __init__(self, file_path: PathLike = None, unk_threshold: int = 1, word_model: Literal["form", "lemma"] = "form"):
         
         self.word_model: Literal["form", "lemma"] = word_model
 
@@ -109,10 +109,10 @@ class our_HMM:
         self.tags = list(set([value[1] for sentence in parsed_file for value in sentence]))
 
         c = Counter([value[0] for sentence in parsed_file for value in sentence])
-        if unk_threshold > 0:
-            c -= Counter({k: v for k, v in c.items() if v <= unk_threshold})
-            # Add UNK to the vocabulary
-            c.update([UNKNOWN_KEYWORD]) # TODO: If the train is done with no UNK and the test has unknowns it will raise an error
+        c -= Counter({k: v for k, v in c.items() if v < unk_threshold})
+        # Add UNK to the vocabulary
+        c.update([UNKNOWN_KEYWORD])
+        
         self.words = list(c.keys())
 
         # Emission probabilities
@@ -130,6 +130,10 @@ class our_HMM:
                 self.transition.loc[upos, previousUpos] += 1
                 previousUpos = upos
             self.transition.loc[END_TAG, previousUpos] += 1
+
+        # A fail safe
+        if self.emission.loc[:, UNKNOWN_KEYWORD].sum() == 0:
+            self.emission.loc[:, UNKNOWN_KEYWORD] = 1
 
         assert self.transition.loc[END_TAG, START_TAG] == 0, "There should be no transition from START to END"
         assert (self.emission.sum(axis=0) > 0).all(), "Each column in emission should sum > 0"
@@ -170,16 +174,25 @@ class our_HMM:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="HMM")
     parser.add_argument("train_file_path", type=str, help="Path to the file for fitting the HMM")
-    parser.add_argument("--unk_threshold", "-u", default=0, type=int, help="Threshold for unknown words")
+    parser.add_argument("--unk_threshold", "-u", default=1, type=int, help="Threshold for unknown words")
     parser.add_argument("--test_file_path", "-t", type=str, help="Path to the file for testing on the fitted model.")
     parser.add_argument("--word_model", "-w", type=str, default="form", help="Which format to use when parsing words. 'form' and 'lemma' are possible.")
+    parser.add_argument("--sentence", "-s", type=str, help="A single sentence to test the model (splitted by spaces)")
+    parser.add_argument("--export_model", "-e", help="Export the trasition and emission matrices to a file", action="store_true")
     args = parser.parse_args()
 
     hmm = our_HMM(args.train_file_path, unk_threshold=args.unk_threshold, word_model=args.word_model)
 
     if args.test_file_path is not None:
         hmm.test(args.test_file_path)
-    else:
+    if args.sentence is not None:
+        sentencePOS, result = hmm.viterbi_algorithm(args.sentence.split(" "))
+        print(result)
+        print(sentencePOS)
+    if args.export_model is True:
+        hmm.transition.to_csv("transition.csv")
+        hmm.emission.to_csv("emission.csv")
+    if args.sentence is None and args.test_file_path is None:
         example_sentences = [
             "the current Windows NT user must be an administrator for the computer .",
             "the can fish",
