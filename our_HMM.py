@@ -49,7 +49,7 @@ class our_HMM:
         self.previos_max_prob_index = 0
         """
 
-    def viterbi_algorithm(self):
+    def viterbi_algorithm(self, sentence: list[Lemma]) -> list[tuple[Lemma, Upos]]:
 
         """print(f'Vocabulary: {self.words}')
         print(f'Tags: {self.tags}')
@@ -120,10 +120,7 @@ class our_HMM:
         assert self.transition.loc[START_TAG, END_TAG] == 0, "There should be no transition from START to END"
         assert (self.emission.sum(axis=0) > 0).all(), "Each column in emission should sum > 0"
 
-        # Apply log2 to all columns
-        self.emission = np.log2(self.emission)
-        print(self.transition)
-
+        # TODO: Apply log transformation to columns
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="HMM")
