@@ -64,7 +64,7 @@ class our_HMM:
         # A single sentence may use multiple times the same word, so we have to assign word_pos
         sentence_enumarated = [word + "_" + str(i) for i, word in enumerate(sentence)]
 
-        result = pd.DataFrame(0, index=self.tags, columns=sentence_enumarated)
+        result = pd.DataFrame(0.0, index=self.tags, columns=sentence_enumarated)
         previous_max_prob = 0
         previous_max_prob_upos: Upos = START_TAG
 
@@ -116,8 +116,8 @@ class our_HMM:
         self.words = list(c.keys())
 
         # Emission probabilities
-        self.emission = pd.DataFrame(0, index=self.tags, columns=self.words)
-        self.transition = pd.DataFrame(0, index=self.tags + [END_TAG], columns=self.tags + [START_TAG])
+        self.emission = pd.DataFrame(0, index=self.tags, columns=self.words, dtype=float)
+        self.transition = pd.DataFrame(0, index=self.tags + [END_TAG], columns=self.tags + [START_TAG], dtype=float)
 
         for sentence in parsed_file:
             previousUpos: Upos = START_TAG
@@ -134,7 +134,13 @@ class our_HMM:
         assert self.transition.loc[END_TAG, START_TAG] == 0, "There should be no transition from START to END"
         assert (self.emission.sum(axis=0) > 0).all(), "Each column in emission should sum > 0"
 
-        # TODO: Apply log transformation to columns (and then use the minimum in virbeti)
+        # Normalize the values (if not a more common class will inflate the numbers, it also helps to get set up for log2)
+        self.emission = self.emission.div(self.emission.sum(axis=0), axis=1)
+        self.transition = self.transition.div(self.transition.sum(axis=0), axis=1)
+
+        # Apply log transformation
+        self.emission = self.emission.map(lambda x: np.log2(x) if x > 0 else -np.inf)
+        self.transition = self.transition.map(lambda x: np.log2(x) if x > 0 else -np.inf)
 
     def test(self, file_path: PathLike) -> dict:
         parsed_file = parse_conllu(file_path, mode=self.word_model)
@@ -184,6 +190,3 @@ if __name__ == '__main__':
         for i in example_sentences:
             print(i)
             print(hmm.viterbi_algorithm(i.split(" "))[0])
-
-    if args.test_file_path is not None:
-        hmm.test(args.test_file_path)
