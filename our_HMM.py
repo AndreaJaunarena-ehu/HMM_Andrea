@@ -2,8 +2,11 @@ from collections import Counter
 from os import PathLike
 import numpy as np 
 from get_list_upos import parse_conllu, Lemma, Upos
+import pandas as pd
 
-UNKNOWN_KEYWORD = "UNK"
+UNKNOWN_KEYWORD: Lemma = "UNK"
+START_TAG: Upos = "START"
+END_TAG: Upos = "END"
 
 
 class our_HMM:
@@ -14,8 +17,16 @@ class our_HMM:
     # Emission matrix = matrix with emission probabilities with len(Q) x len(V) size (tags in rows and words in columns)
     # Transition matrix = matrix with transition probabilities with len(Q)+1 x len(Q)+1 size (tags in rows and columns) (+1 in both because start and stop states have to be taken into account)
 
-    def __init__(self, Q, V):
+    def __init__(self, file_path: PathLike, unk_threshold: int = 0):
         
+        self.words: list[Lemma]
+        self.tags: list[Upos]
+        self.emission: pd.DataFrame
+        self.transition: pd.DataFrame
+
+        self.fit(file_path, unk_threshold)
+
+        """
         self.tags = Q # tags in the given tag set
         self.words = V # words in the given sentence  
         
@@ -32,6 +43,7 @@ class our_HMM:
         self.previos_max_prob = 0
         # Previos word maximum probability's index for all tags
         self.previos_max_prob_index = 0
+        """
 
     def viterbi_algorithm(self):
 
@@ -72,10 +84,11 @@ class our_HMM:
         # print(self.result)
         return final_result
     
-    def train(self, file_path: PathLike, unk_threshold: int = 0):
+    def fit(self, file_path: PathLike, unk_threshold: int = 0):
         parsed_file = parse_conllu(file_path)
 
-        self.tags = list(set([value[1] for sentence in parsed_file for value in sentence]))
+        # Get the lists of words and tags
+        self.tags = list(set([value[1] for sentence in parsed_file for value in sentence])) + [START_TAG, END_TAG]
         
         c = Counter([value[0] for sentence in parsed_file for value in sentence])
         if unk_threshold > 0:
@@ -83,7 +96,29 @@ class our_HMM:
             # Add UNK to the vocabulary
             c.update([UNKNOWN_KEYWORD])
         self.words = list(c.keys())
+        
+        # Emission probabilities
+        self.emission = pd.DataFrame(0, index=self.tags, columns=self.words)
+        self.transition = pd.DataFrame(0, index=self.tags, columns=self.tags)
+        self.transition.drop(index=END_TAG, columns=START_TAG, inplace=True)
 
+        for sentence in parsed_file:
+            previousUpos: Upos = START_TAG
+            for word, upos in sentence:
+                if word in self.words:
+                    self.emission.loc[upos, word] += 1
+                else:
+                    self.emission.loc[upos, UNKNOWN_KEYWORD] += 1
+                self.transition.loc[previousUpos, upos] += 1
+                previousUpos = upos
+            self.transition.loc[previousUpos, END_TAG] += 1
+
+        assert self.transition.loc[START_TAG, END_TAG] == 0, "There should be no transition from START to END"
+        assert (self.emission.sum(axis=0) > 0).all(), "Each column in emission should sum > 0"
+
+        # Apply log2 to all columns
+        self.emission = np.log2(self.emission)
+        print(self.transition)
 
     
 if __name__ == '__main__':
