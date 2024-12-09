@@ -32,7 +32,7 @@ class our_HMM:
         self.transition: pd.DataFrame # Index: to, Columns: from
 
         if file_path is not None:
-            self.fit(file_path, unk_threshold)
+            self.fit(file_path, unk_threshold) # Train the model
 
     def viterbi_algorithm(self, sentence: list[Lemma]) -> tuple[list[tuple[Lemma, Upos]], pd.DataFrame]:
 
@@ -152,24 +152,30 @@ class our_HMM:
         # We just put all the tags in a continuos list, reducing in that way one dimension
         gold: list[Upos] = []
         pred: list[Upos] = []
-
+        gold_tag: list[str] = []
+        pred_tag: list[str] = []
         for sentence in parsed_file:
-            gold.extend([word_pair[1] for word_pair in sentence])
+            tags = [word_pair[1] for word_pair in sentence]
+
+            gold.extend(tags)
+            gold_tag.append(tags)
 
             lemma_sentence = [word_pair[0] for word_pair in sentence]
-
+            
             predictions = self.viterbi_algorithm(lemma_sentence)[0]
             predictions = [word_pair[1] for word_pair in predictions]
+
             pred.extend(predictions)
+            pred_tag.append(predictions)
         
         # Change the gold and pred values for the index values in self.tags
         gold = [self.tags.index(x) for x in gold]
+
         pred = [self.tags.index(x) for x in pred]
 
         results = compute_metrics(pred=pred, gold=gold)
 
-        print(results)
-        return results
+        return (results, parsed_file, pred_tag, gold_tag)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="HMM")
@@ -199,7 +205,6 @@ if __name__ == '__main__':
             "the aged bottle fly fast",
             "the quick brown fox jump over the lazy dog ."
         ]
-
         for i in example_sentences:
             print(i)
             print(hmm.viterbi_algorithm(i.split(" "))[0])
