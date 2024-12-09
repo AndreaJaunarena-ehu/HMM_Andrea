@@ -2,8 +2,8 @@ from os import PathLike
 from typing import Literal
 import conllu
 
-type Lemma = str
-type Upos = str
+Lemma = str
+Upos = str
 
 def parse_conllu(file_path: PathLike, mode: Literal["form", "lemma"] = "form") -> list[list[tuple[Lemma, Upos]]]:
     final_list: list[list[tuple[Lemma, Upos]]] = []
