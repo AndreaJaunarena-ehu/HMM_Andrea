@@ -2,7 +2,7 @@ from os import PathLike
 from typing import Literal
 import conllu
 
-type Lemma = str
+Lemma = str
 Upos = str
 
 def parse_conllu(file_path: PathLike, mode: Literal["form", "lemma"] = "form") -> list[list[tuple[Lemma, Upos]]]:
