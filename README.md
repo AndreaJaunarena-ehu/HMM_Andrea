@@ -1,7 +1,12 @@
-# Practical Group Exercise 
-## Implementing an HMM Pos Tagger 
+# Practical Group Exercise
 
-## Instalation
+In this exercise an HMM model + Viterbi is implemented. The model is trained with a conllu file and tested with another one. **You can find the analysis of the results in the analysis.ipynb file.** In case you want to use the model separately, you can use the our_HMM.py file (command line usage is explained below).
+
+> Authors: *Andrea Jaunarena*, *Markel Ferro*, *Juliana Planas* and *Lukas Arana*.
+
+### Implementing an HMM Pos Tagger 
+
+### Instalation
 
 ```bash
 python -m venv .venv
@@ -11,11 +16,11 @@ source .\.venv\Scripts\activate.bat # Windows
 pip install -r requirements.txt
 ```
 
-## Usage
+### Usage
 
 You must have a file in conllu format to fit the model. That will be the first parameter. Apart from that you have various options.
 
-### Use a test file
+#### Use a test file
 
 In this mode you test your model in another conllu file. It is passed as `-t`.
 
@@ -29,7 +34,7 @@ Output:
 {'precision_micro': 0.8136248775204992, 'precision_macro': 0.7852392072793883, 'recall_micro': 0.8136248775204992, 'recall_macro': 0.612734531152367, 'f1_micro': 0.8136248775204992, 'f1_macro': 0.6513179995385716, 'accuracy': 0.8136248775204992}
 ```
 
-### Test a single sentence
+#### Test a single sentence
 
 This mode is useful for analyzing how the model performed in a single sentence. Provide the sentence with `-s` (please, separate the symbols like dots with a space).
 
@@ -62,7 +67,7 @@ PUNCT      -inf      -inf      -inf -16.060208 -19.534792       -inf       -inf 
 [('the', 'DET'), ('quick', 'ADJ'), ('brown', 'ADJ'), ('fox', 'NOUN'), ('jump', 'PUNCT'), ('over', 'ADP'), ('the', 'DET'), ('lazy', 'NOUN'), ('dog', 'NOUN'), ('.', 'PUNCT')]
 ```
 
-### Export the matrices
+#### Export the matrices
 
 With the `-e` option you may export the emmision and transition matrices generated from the train file to a .csv
 
