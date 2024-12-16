@@ -1,0 +1,5 @@
+Authors: Juliana Maria Planas, Andrea Jaunarena Cayetano, Markel Ferro Postigo, Lukas Arana Garmendia
+
+Github: https://github.com/AndreaJaunarena-ehu/HMM_Andrea
+
+Notebook: analisys.ipynb in the repo
